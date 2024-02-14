@@ -5,6 +5,8 @@ from customtkinter import *
 session: frida.core.Session
 fun = 0x0
 app = CTk()
+entry_index = 0
+parse_entries = []
 parse_total = 0
 time_elapsed = 0
 last_timer_mem = 0x0
@@ -19,7 +21,7 @@ def scan(pattern):
 
         function processNext(){
             var match = false;
-            
+
             range = ranges.pop();
             if (!range) {
                 return;
@@ -30,17 +32,17 @@ def scan(pattern):
                     send(address.toString());
                     match = true;
                     return "stop";
-                }, 
+                },
                 onError: function(reason){
                     console.log('[!] There was an error scanning memory');
-                }, 
+                },
                 onComplete: function(){
                     if (match == true) { return; }
                     processNext();
                 }
             });
         }
-        
+
         processNext();
     """ % pattern)
 
@@ -79,17 +81,20 @@ def on_read_msg(message, data):
     global last_timer_mem
     global time_elapsed
     global parse_total
+    global parse_entries
 
     if rax >= 9999999:
         if last_timer_mem != rsi and last_timer_mem != 1:
             last_timer_mem = rsi
             time_elapsed = 0
             parse_total = 0
+            parse_entries = []
         else:
             time_elapsed += 1
             update()
     else:
         parse_total += rax
+        parse_entries.append(rax)
         # print("rsi: %s -> %s" % (rsi, rax))
         update()
 
@@ -98,9 +103,12 @@ def reset(event):
     global last_timer_mem
     global time_elapsed
     global parse_total
+    global parse_entries
     last_timer_mem = 1
     time_elapsed = 0
     parse_total = 0
+    parse_entries = []
+    entry_index = 0
     update(1)
 
 
@@ -118,7 +126,7 @@ def main():
 
 
 def gui(err=False):
-    app.geometry("450x100")
+    app.geometry("450x450")
     app.attributes("-topmost", True)
     app.title("Scuffed GBFR Parser")
 
@@ -131,18 +139,24 @@ def gui(err=False):
 
     else:
         app.label = CTkLabel(master=app, text=parse_text % (0, "00", 0, 0), font=("Arial", 20))
-        app.label.place(relx=0.5, rely=0.3, anchor="center")
+        app.label.place(relx=0.5, rely=0.1, anchor="center")
 
         app.button = CTkButton(master=app, text="Reset")
-        app.button.place(relx=0.5, rely=0.7, anchor="center")
+        app.button.place(relx=0.5, rely=0.2, anchor="center")
         app.button.bind("<Button-1>", reset)
+
+        app.textbox = CTkTextbox(master=app, font=("Consolas", 14))
+        app.textbox.place(relx=0.05, rely=0.3, relwidth=0.9, relheight=0.7, anchor="nw")
 
     app.mainloop()
 
 
 def update(r=0):
+    global entry_index
+
     if r:
         app.label.configure(text=parse_text % (0, "00", 0, 0))
+        app.textbox.delete('0.0', 'end')
         return
 
     seconds = time_elapsed % 60 if time_elapsed % 60 > 9 else "0%s" % (time_elapsed % 60)
@@ -154,8 +168,11 @@ def update(r=0):
         f"{damage:,}",
         f"{dps:,}"))
 
+    app.textbox.insert('end', '\n'.join([f"{item:11,}" for item in parse_entries[entry_index:]]))
+    app.textbox.insert('end', '\n')
+    entry_index = len(parse_entries)
+
 
 if __name__ == '__main__':
     customtkinter.set_appearance_mode("Dark")
     main()
-

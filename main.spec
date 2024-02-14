@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['C:\\Users\\Michael\\PycharmProjects\\w\\main.py'],
+    ['E:\\pub\\scuffed-gbfr-parser\\main.py'],
     pathex=[],
     binaries=[],
     datas=[],
