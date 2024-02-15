@@ -88,6 +88,7 @@ def on_read_msg(message, data):
             last_timer_mem = rsi
             time_elapsed = 0
             parse_total = 0
+            entry_index = 0
             parse_entries = []
         else:
             time_elapsed += 1
@@ -95,7 +96,6 @@ def on_read_msg(message, data):
     else:
         parse_total += rax
         parse_entries.append(rax)
-        # print("rsi: %s -> %s" % (rsi, rax))
         update()
 
 
@@ -103,12 +103,13 @@ def reset(event):
     global last_timer_mem
     global time_elapsed
     global parse_total
+    global entry_index
     global parse_entries
     last_timer_mem = 1
     time_elapsed = 0
     parse_total = 0
-    parse_entries = []
     entry_index = 0
+    parse_entries = []
     update(1)
 
 
